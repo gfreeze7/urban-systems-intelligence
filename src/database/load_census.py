@@ -13,29 +13,49 @@ def load_census_records(records):
                         geoid,
                         tract,
                         name,
-                        population,
                         state,
                         county
                     )
-                    VALUES (%s, %s, %s, %s, %s, %s)
+                    VALUES (%s, %s, %s, %s, %s)
                     ON CONFLICT (geoid) DO UPDATE SET
-                    tract = EXCLUDED.tract,
-                    name = EXCLUDED.name,
-                    population = EXCLUDED.population,
-                    state = EXCLUDED.state,
-                    county = EXCLUDED.county
+                        tract = EXCLUDED.tract,
+                        name = EXCLUDED.name,
+                        state = EXCLUDED.state,
+                        county = EXCLUDED.county
                     """,
                     (
                         record["geoid"],
                         record["tract"],
                         record["name"],
-                        record["population"],
                         record["state"],
                         record["county"],
                     ),
                 )
 
-            connection.commit()
+                cursor.execute(
+                    """
+                    INSERT INTO census_acs_observations (
+                        geoid,
+                        year,
+                        dataset,
+                        variable,
+                        value
+                    )
+                    VALUES (%s, %s, %s, %s, %s)
+                    ON CONFLICT (geoid, year, dataset, variable)
+                    DO UPDATE SET
+                        value = EXCLUDED.value
+                    """,
+                    (
+    			record["geoid"],
+    			record["year"],
+    			record["dataset"],
+    			record["variable"],
+    			record["population"],
+),
+                )
+
+        connection.commit()
 
     except Exception:
         connection.rollback()

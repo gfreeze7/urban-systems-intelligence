@@ -15,6 +15,10 @@ CENSUS_API_KEY = os.getenv("CENSUS_API_KEY")
 
 BASE_URL = "https://api.census.gov/data/2024/acs/acs5"
 
+CENSUS_YEAR = 2024
+CENSUS_DATASET = "acs5"
+POPULATION_VARIABLE = "B01003_001E"
+
 params = {
     "get": "NAME,B01003_001E",
     "for": "tract:*",
@@ -81,12 +85,15 @@ def transform_records(headers, rows):
             raise ValueError(f"Unexpected county code: {raw_record['county']}")
         
         record = {
-    "geoid": geoid,
-    "name": raw_record["NAME"],
-    "population": int(population_raw),
-    "state": raw_record["state"],
-    "county": raw_record["county"],
-    "tract": tract,
+            "geoid": geoid,
+            "name": raw_record["NAME"],
+            "population": int(population_raw),
+            "state": raw_record["state"],
+            "county": raw_record["county"],
+            "tract": tract,
+            "year": CENSUS_YEAR,
+            "dataset": CENSUS_DATASET,
+            "variable": POPULATION_VARIABLE,
 }
 
         records.append(record)

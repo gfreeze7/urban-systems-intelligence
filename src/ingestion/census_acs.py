@@ -4,8 +4,8 @@ import os
 import requests
 from dotenv import load_dotenv
 
-
 from src.database.load_census import load_census_records
+from src.database.pipeline_runs import start_pipeline_run, finish_pipeline_run
 
 
 
@@ -101,26 +101,52 @@ def transform_records(headers, rows):
     return records
 
 def main():
-    data = get_census_data()
+    run_id = start_pipeline_run("census_acs")
 
-    headers, rows = validate_census_response(data)
+    try:
+        data = get_census_data()
 
-    save_json(data, "data/raw/census_acs_2024_baltimore.json")
+        headers, rows = validate_census_response(data)
 
-    print("Headers:", headers)
-    print("Number of rows:", len(rows))
-    print("First data row:", rows[0])
-    
-    records = transform_records(headers, rows)
+        save_json(data, "data/raw/census_acs_2024_baltimore.json")
 
-    validate_unique_tracts(records)
+        print("Headers:", headers)
+        print("Number of rows:", len(rows))
+        print("First data row:", rows[0])
 
-    load_census_records(records)
+        records = transform_records(headers, rows)
 
-    save_json(records, "data/processed/census_acs_2024_baltimore.json")
+        validate_unique_tracts(records)
 
-    print("Number of records:", len(records))
-    print("First record:", records[0])
+        load_stats = load_census_records(records)
+
+        print("Load stats:", load_stats)
+
+        save_json(records, "data/processed/census_acs_2024_baltimore.json")
+
+        print("Number of records:", len(records))
+        print("First record:", records[0])
+
+        records_changed = load_stats["inserted"] + load_stats["updated"]
+
+        finish_pipeline_run(
+            run_id,
+            "success",
+            records_processed=records_changed,
+            records_received=len(records),
+            records_inserted=load_stats["inserted"],
+            records_updated=load_stats["updated"],
+            records_unchanged=load_stats["unchanged"],
+        )
+
+    except Exception as error:
+        finish_pipeline_run(
+            run_id,
+            "failed",
+            error_message=str(error),
+        )
+        raise
+
 
 if __name__ == "__main__":
     main()

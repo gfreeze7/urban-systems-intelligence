@@ -1,6 +1,7 @@
 import csv
 
 from src.database.load_geography_crosswalk import load_geography_crosswalk
+from src.database.pipeline_runs import start_pipeline_run, finish_pipeline_run
 
 
 CROSSWALK_FILEPATH = "data/raw/geography/bnia_tract2020_to_csa2010.csv"
@@ -81,17 +82,33 @@ def validate_crosswalk(records):
 
 
 def main():
-    rows = read_crosswalk()
-    records = transform_crosswalk(rows)
-    validate_crosswalk(records)
+    run_id = start_pipeline_run("geography_crosswalk")
 
-    load_geography_crosswalk(records)
+    try:
+        rows = read_crosswalk()
+        records = transform_crosswalk(rows)
+        validate_crosswalk(records)
 
-    print("Raw rows:", len(rows))
-    print("Validated records:", len(records))
-    print("First record:", records[0])
-    print("Crosswalk load complete")
+        load_geography_crosswalk(records)
 
+        print("Raw rows:", len(rows))
+        print("Validated records:", len(records))
+        print("First record:", records[0])
+        print("Crosswalk load complete")
+
+        finish_pipeline_run(
+            run_id,
+            "success",
+            records_processed=len(records),
+        )
+
+    except Exception as error:
+        finish_pipeline_run(
+            run_id,
+            "failed",
+            error_message=str(error),
+        )
+        raise
 
 if __name__ == "__main__":
-    main()
+        main()

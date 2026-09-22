@@ -1,0 +1,5 @@
+ALTER TABLE pipeline_runs
+ADD COLUMN IF NOT EXISTS records_received INTEGER,
+ADD COLUMN IF NOT EXISTS records_inserted INTEGER,
+ADD COLUMN IF NOT EXISTS records_updated INTEGER,
+ADD COLUMN IF NOT EXISTS records_unchanged INTEGER;

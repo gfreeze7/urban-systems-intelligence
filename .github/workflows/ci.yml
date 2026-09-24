@@ -1,4 +1,4 @@
-﻿name: CI
+name: CI
 
 on:
   push:
@@ -59,7 +59,7 @@ jobs:
           psql -h localhost -U project3_app -d project3_db -f database/migrations/005_remove_population_from_census_tracts.sql
 
       - name: Seed CI database
-        run: python tests/seed_ci_database.py
+        run: python -m tests.seed_ci_database
 
       - name: Run test suite
         run: python -m pytest -q

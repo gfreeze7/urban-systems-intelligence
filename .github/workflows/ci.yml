@@ -59,8 +59,7 @@ jobs:
           psql -h localhost -U project3_app -d project3_db -f database/migrations/005_remove_population_from_census_tracts.sql
 
       - name: Seed CI database
-        run: |
-          python -m src.ingestion.bnia_vital_signs
+        run: python tests/seed_ci_database.py
 
       - name: Run test suite
         run: python -m pytest -q

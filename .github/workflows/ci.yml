@@ -10,6 +10,28 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: project3_db
+          POSTGRES_USER: project3_app
+          POSTGRES_PASSWORD: ci_test_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U project3_app -d project3_db"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_NAME: project3_db
+      DB_USER: project3_app
+      DB_PASSWORD: ci_test_password
+
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -23,6 +45,22 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+
+      - name: Build database schema
+        env:
+          PGPASSWORD: ci_test_password
+        run: |
+          psql -h localhost -U project3_app -d project3_db -f database/schema/001_create_census_tracts.sql
+          psql -h localhost -U project3_app -d project3_db -f database/schema/002_create_bnia_tables.sql
+          psql -h localhost -U project3_app -d project3_db -f database/schema/003_create_geography_crosswalk.sql
+          psql -h localhost -U project3_app -d project3_db -f database/schema/004_create_pipeline_runs.sql
+          psql -h localhost -U project3_app -d project3_db -f database/schema/005_add_pipeline_run_metrics.sql
+          psql -h localhost -U project3_app -d project3_db -f database/migrations/004_separate_census_observations.sql
+          psql -h localhost -U project3_app -d project3_db -f database/migrations/005_remove_population_from_census_tracts.sql
+
+      - name: Seed CI database
+        run: |
+          python -m src.ingestion.bnia_vital_signs
 
       - name: Run test suite
         run: python -m pytest -q
